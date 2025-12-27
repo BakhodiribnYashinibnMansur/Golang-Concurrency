@@ -1,0 +1,5 @@
+A data structure to hold the queue of messages
+An initialization function to create a channel with a given capacity and specific type
+A send function to add data to the channel (with waiting behavior when the channel is unbuffered or full)
+A receive function to retrieve data from the channel (with waiting behavior when the channel is unbuffered or empty)
+A close function to close the channel

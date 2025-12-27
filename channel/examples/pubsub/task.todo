@@ -1,0 +1,81 @@
+Task: 
+Implement a complete Pub/Sub (Publisher-Subscriber) system using Golang channels
+where publishers can send messages to topics and multiple subscribers can receive them concurrently.
+
+How it works:
+
+PubSub struct contains a map of subscribers for each topic.
+Subscribe method lets subscribers get a channel on which they'll receive events for a particular topic.
+Publish method sends the given value to all subscribers of the topic.
+Close method removes a subscriber's channel and closes it.
+
+
+Tips and Tricks for Pros:
+Avoid Global Channels: Instead of global channels, prefer passing channels as function arguments. This promotes better encapsulation.
+Detecting Deadlocks: Go’s runtime can detect certain deadlocks and will panic if one is encountered.
+Nil Channels: A send operation on a nil channel will block forever, whereas a receive from a nil channel will always block.
+Avoid ‘Busy Waiting’: Instead of frequently polling a channel, utilize select or range to wait for values efficiently.
+
+
+
+
+
+Implementation Requirements:
+
+1. Complete the Publisher struct:
+   - Publisher uses sync.RWMutex for thread-safe operations
+   - Maintains a map of topics to subscriber channels: map[string][]chan string
+   - NewPublisher() function creates a new Publisher instance
+
+2. Implement Topic Management:
+   - Add CreateTopic(topic string) method to create new topics
+   - Fix Subscribe() method: currently it requires topic to exist, but there's no way to create topics
+   - Topics should be initialized as empty slices when created
+
+3. Implement Publish functionality:
+   - Publish(topic, message) sends message to all subscribers of a topic
+   - Uses RLock for concurrent reads
+   - Returns error if topic doesn't exist
+   - Sends message to all subscriber channels
+
+4. Implement Subscribe functionality (exists in subscribe.go, needs fix):
+   - Subscribe(topic) creates a new channel and adds it to topic's subscribers
+   - Returns receive-only channel (<-chan string) for the subscriber
+   - Should work with CreateTopic() - allow subscribing to newly created topics
+   - Uses Lock for exclusive write access
+
+5. Implement Close functionality:
+   - CloseTopic(topic) closes all channels for a topic and removes it
+   - CloseSubscriber(topic, channel) removes a specific subscriber from a topic
+   - Both methods should handle errors gracefully
+
+6. Main function implementation:
+   - Create a Publisher instance
+   - Create multiple topics (e.g., "news", "sports", "tech")
+   - Start multiple publisher goroutines that publish messages to different topics
+   - Start multiple subscriber goroutines that subscribe to topics and receive messages
+   - Use sync.WaitGroup to coordinate goroutines
+   - Demonstrate:
+     * Multiple publishers publishing to same topic
+     * Multiple subscribers receiving from same topic (broadcast pattern)
+     * Subscribers receiving messages concurrently
+   - Gracefully close topics when done
+
+7. Example usage pattern:
+   - Publisher 1 publishes "Breaking news!" to "news" topic
+   - Subscriber 1, 2, 3 all receive the message from "news" topic
+   - Publisher 2 publishes "Game score: 3-1" to "sports" topic
+   - Subscribers of "sports" topic receive the message
+
+8. Expected output:
+   - Show messages being published to topics
+   - Show all subscribers receiving messages (demonstrating broadcast)
+   - Show concurrent message processing
+   - Proper cleanup when closing topics
+
+Bonus:
+- Add Unsubscribe() method as an alias or wrapper for CloseSubscriber()
+- Implement message filtering (subscribers can filter messages)
+- Add topic statistics (number of subscribers, messages published)
+- Implement message buffering for slow subscribers
+- Add context.Context support for cancellation
