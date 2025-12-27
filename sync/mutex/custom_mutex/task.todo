@@ -1,0 +1,280 @@
+════════════════════════════════════════════════════════════════════════════════
+                    CUSTOM MUTEX (MONITOR PATTERN) - TASK
+════════════════════════════════════════════════════════════════════════════════
+
+📋 OBJECTIVE:
+-------------
+Implement a custom mutex using Go channels (monitor pattern). This implementation
+provides thread-safe data access using channels instead of sync.Mutex.
+
+════════════════════════════════════════════════════════════════════════════════
+
+🏗️  ARCHITECTURE:
+-----------------
+
+The Mutex structure contains:
+  • data: The protected value (generic type T)
+  • read: Channel for read requests (chan chan T)
+  • write: Channel for write requests (chan T)
+  • stop: Channel for cleanup signal (chan struct{})
+
+════════════════════════════════════════════════════════════════════════════════
+
+📝 IMPLEMENTATION COMPONENTS:
+------------------------------
+
+1. MUTEX STRUCT
+   ├─ Generic type parameter [T any]
+   ├─ data: protected value
+   ├─ read: channel for read operations
+   ├─ write: channel for write operations
+   └─ stop: channel for shutdown signal
+
+2. CONSTRUCTORS
+   ├─ NewMutex[T](): Create empty mutex
+   │  ├─ Initialize all channels
+   │  ├─ Start monitor goroutine
+   │  └─ Handle requests via select loop
+   │
+   └─ NewMutexWithValue[T](value): Create mutex with initial value
+      └─ Call NewMutex() and set data field directly
+
+3. GET OPERATION
+   ├─ Create response channel
+   ├─ Send response channel to read channel
+   └─ Wait for result from response channel
+
+4. SEND OPERATION
+   └─ Send new value to write channel
+
+5. CLOSE OPERATION
+   └─ Send signal to stop channel
+
+6. TEST CASES
+   ├─ Test 1: Basic Operations
+   ├─ Test 2: Concurrent Access (Stress Test)
+   ├─ Test 3: Resource Clean-up
+   ├─ Test 4: Heavy Load (1000 values)
+   └─ Test 5: Concurrent String Access
+
+════════════════════════════════════════════════════════════════════════════════
+
+🔄 HOW IT WORKS:
+----------------
+
+Monitor Goroutine:
+  • Runs in infinite loop with select statement
+  • Handles three types of operations:
+    1. Read: Receives response channel, sends current data back
+    2. Write: Receives new value, updates internal data
+    3. Stop: Exits goroutine and cleans up resources
+
+Key Principle:
+  • Only ONE goroutine has direct access to data
+  • All operations are serialized through channels
+  • Race conditions are automatically prevented
+
+════════════════════════════════════════════════════════════════════════════════
+
+🎯 CORE CONCEPTS:
+-----------------
+
+1. MONITOR PATTERN:
+   • Single goroutine has exclusive access to data
+   • All operations are serialized via channels
+   • Race conditions automatically prevented
+
+2. CHANNEL COMMUNICATION:
+   • read: chan chan T - "Send me a response channel" pattern
+   • write: chan T - "Send new value" pattern
+   • stop: chan struct{} - "Signal-only" pattern
+
+3. THREAD SAFETY:
+   • Only one goroutine modifies data at a time
+   • Channels are synchronized by Go runtime
+   • Thread-safe access without explicit locks
+
+════════════════════════════════════════════════════════════════════════════════
+
+✅ COMPLETED TASKS:
+-------------------
+
+[✓] 1. Create generic Mutex struct
+[✓] 2. Implement NewMutex() constructor
+[✓] 3. Add NewMutexWithValue() constructor
+[✓] 4. Implement Get() method - read operation
+[✓] 5. Implement Send() method - write operation
+[✓] 6. Implement Close() method - cleanup operation
+[✓] 7. Create monitor goroutine with select loop
+[✓] 8. Test 1: Basic operations
+[✓] 9. Test 2: Concurrent access (10 writers, 10 readers)
+[✓] 10. Test 3: Resource cleanup
+[✓] 11. Test 4: Heavy load (1000 values)
+[✓] 12. Test 5: Concurrent string access (100 writers, 100 readers)
+
+════════════════════════════════════════════════════════════════════════════════
+
+🧪 TEST RESULTS:
+----------------
+
+Test 1: Basic Operations
+  ✓ Send and Get operations work correctly
+  ✓ Value updates properly
+
+Test 2: Concurrent Access
+  ✓ 10 writers + 10 readers, 100 iterations each
+  ✓ No deadlocks detected
+  ✓ No race conditions
+
+Test 3: Resource Clean-up
+  ✓ Close() doesn't panic
+  ✓ Goroutine terminates properly
+
+Test 4: Heavy Load
+  ✓ 1000 sequential updates
+  ✓ Each value stored correctly
+  ✓ Good performance
+
+Test 5: Concurrent String Access
+  ✓ 100 writers + 100 readers, 100 ops each
+  ✓ Works with string type
+  ✓ No timeouts
+
+════════════════════════════════════════════════════════════════════════════════
+
+📊 PERFORMANCE ANALYSIS:
+------------------------
+
+ADVANTAGES:
+  ✓ Simple and understandable code
+  ✓ Safe from race conditions
+  ✓ Generic type support
+  ✓ Protected from deadlocks (with timeouts)
+  ✓ Resource cleanup mechanism
+
+DISADVANTAGES:
+  ✗ Slower than sync.Mutex (channel overhead)
+  ✗ Channel communication required for each operation
+  ✗ Send/Get block after Close() (doesn't panic)
+
+════════════════════════════════════════════════════════════════════════════════
+
+🔍 IMPORTANT NUANCES:
+---------------------
+
+1. RESPONSE CHANNEL PATTERN:
+   • Get() creates a new channel each time
+   • This channel is sent to monitor goroutine
+   • Monitor sends data back through this channel
+   • This pattern enables request-response communication
+
+2. DIRECT DATA ACCESS:
+   • NewMutexWithValue() sets m.data directly
+   • This could be unsafe if mutex is already in use
+   • But safe in constructor (no other goroutines yet)
+
+3. CLOSE SEMANTICS:
+   • Close() stops the monitor goroutine
+   • Send/Get will block after Close() (channels not closed)
+   • Production code should use closed channel pattern
+
+════════════════════════════════════════════════════════════════════════════════
+
+🚀 FUTURE IMPROVEMENTS:
+-----------------------
+
+[ ] 1. TryGet() - non-blocking read
+[ ] 2. TrySend() - non-blocking write
+[ ] 3. GetWithTimeout() - read with timeout
+[ ] 4. SendWithTimeout() - write with timeout
+[ ] 5. Panic after Close() is called
+[ ] 6. Closed() bool method - check mutex state
+[ ] 7. Add benchmark tests
+[ ] 8. Performance comparison with sync.Mutex
+[ ] 9. Add context support
+[ ] 10. Multiple readers, single writer pattern
+
+════════════════════════════════════════════════════════════════════════════════
+
+📚 CONCEPTS LEARNED:
+--------------------
+
+1. Monitor Pattern
+   • Single goroutine manages shared state
+   • Communication via channels
+
+2. Channel Patterns
+   • chan chan T - response channel pattern
+   • chan struct{} - signal-only channel
+
+3. Generic Programming
+   • Type parameters [T any]
+   • Type-safe data structures
+
+4. Concurrency Safety
+   • Channel-based synchronization
+   • Select statement
+   • Goroutine lifecycle management
+
+5. Testing Strategies
+   • Concurrent stress testing
+   • Timeout-based deadlock detection
+   • Race condition testing
+
+════════════════════════════════════════════════════════════════════════════════
+
+💡 WHEN TO USE:
+---------------
+
+CUSTOM MUTEX (Channel-based):
+  ✓ For learning and understanding
+  ✓ When complex state machine is needed
+  ✓ When request-response pattern is required
+  ✓ When serialized access is needed
+
+SYNC.MUTEX:
+  ✓ In production code
+  ✓ When performance is critical
+  ✓ When simple lock/unlock is sufficient
+  ✓ When standard library is adequate
+
+════════════════════════════════════════════════════════════════════════════════
+
+🎓 CONCLUSION:
+--------------
+
+This custom mutex implementation demonstrates how Go's concurrency primitives
+(channels and goroutines) can be used for synchronization. While sync.Mutex is
+better for production code, this implementation is excellent for understanding
+the monitor pattern and channel-based communication.
+
+The monitor pattern is a classic concurrency pattern based on the idea of
+managing shared state through a single goroutine and serializing all access
+through channels.
+
+════════════════════════════════════════════════════════════════════════════════
+
+📝 NOTE:
+--------
+
+This implementation was created for educational purposes. For production code,
+use sync.Mutex or sync.RWMutex because they:
+  • Run faster
+  • Use less memory
+  • Are optimized by Go runtime
+  • Have deadlock detection mechanisms
+
+════════════════════════════════════════════════════════════════════════════════
+
+🔑 KEY TAKEAWAYS:
+-----------------
+
+1. Channels can be used for synchronization, not just communication
+2. Monitor pattern provides thread-safety without explicit locks
+3. Generic types enable reusable, type-safe concurrent data structures
+4. Select statement is powerful for managing multiple channel operations
+5. Understanding custom implementations helps appreciate standard library
+6. Trade-offs exist between simplicity, performance, and safety
+7. Educational implementations teach concepts that apply broadly
+
+════════════════════════════════════════════════════════════════════════════════
